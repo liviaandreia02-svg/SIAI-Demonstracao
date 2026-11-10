@@ -1,16 +1,9 @@
-from flask import Flask,render_template,request,redirect,url_for,flash,Response,jsonify,abort
+from flask import Flask,render_template,request,redirect,url_for,flash,Response,jsonify
 import sqlite3,csv,io,os,secrets
 from datetime import datetime
 app=Flask(__name__); app.secret_key=os.environ.get("APP_SECRET_KEY","troque-a-chave")
-DB=os.environ.get("SIAI_DB_PATH",os.path.join("/tmp","siai_demo.db"))
-TOKEN=os.environ.get("ESP32_API_TOKEN",secrets.token_urlsafe(32))
-
-@app.before_request
-def public_demo_read_only():
- if request.method not in ("GET", "HEAD", "OPTIONS"):
-  abort(403)
- if request.path.startswith("/api/") or request.path == "/export.csv":
-  abort(403)
+DB=os.path.join(os.path.dirname(__file__),"armario.db")
+TOKEN=os.environ.get("ESP32_API_TOKEN","troque-este-token")
 def conn():
  c=sqlite3.connect(DB); c.row_factory=sqlite3.Row; c.execute("PRAGMA foreign_keys=ON"); return c
 def init():
@@ -23,7 +16,6 @@ def init():
    c.execute("INSERT INTO rooms(name,description) VALUES('Sala de exemplo','Registro demonstrativo')"); rid=c.execute("SELECT id FROM rooms").fetchone()["id"]
    c.execute("INSERT INTO cabinets(name,room_id,location) VALUES('Armário 01',?,'Demonstração')",(rid,)); cid=c.execute("SELECT id FROM cabinets").fetchone()["id"]
    c.execute("INSERT INTO users(full_name,registration,biometric_id,room_id,cabinet_id,created_at) VALUES(?,?,?,?,?,?)",("Usuário de demonstração","EXEMPLO-001","BIO-001",rid,cid,datetime.now().isoformat(timespec="seconds")))
-   c.execute("INSERT INTO logs(event_time,person_name,registration,biometric_id,room_name,cabinet_name,result,reason,source) VALUES(?,?,?,?,?,?,?,?,?)",(datetime.now().astimezone().isoformat(timespec="seconds"),"Usuário de demonstração","EXEMPLO-001","BIO-001","Sala de exemplo","Armário 01","Autorizado","Registro fictício","Demonstração"))
 @app.context_processor
 def ctx(): return {"year":datetime.now().year}
 @app.route("/")
